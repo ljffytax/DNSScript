@@ -29,10 +29,21 @@ for DNS_IP in ${ip_arr[@]};do
       min_ip=$DNS_IP
    fi
 done
-IP_TTL=$(ping -c1 $min_ip | grep ttl | awk {'print $6'} |awk -F= {'print $2'})
-echo "get fast dns is $min_ip time is $min_time ms"
-echo "get TTL is $IP_TTL"
-echo "nameserver $min_ip" > /etc/resolv.conf
-iptables -F
-iptables -A INPUT -p udp --sport 53 -m ttl --ttl-eq $IP_TTL -j ACCEPT
-iptables -A INPUT -p udp --sport 53 -j DROP
+if [ $min_ip ]
+then
+   IP_TTL=$(ping -c1 $min_ip | grep ttl | awk {'print $6'} |awk -F= {'print $2'})
+else
+   IP_TTL=""
+fi
+if [ $IP_TTL ]
+then
+   echo "get fast dns is $min_ip time is $min_time ms"
+   echo "get TTL is $IP_TTL"
+   echo "nameserver $min_ip" > /etc/resolv.conf
+   iptables -F
+   iptables -A INPUT -p udp --sport 53 -m ttl --ttl-eq $IP_TTL -j ACCEPT
+   iptables -A INPUT -p udp --sport 53 -j DROP
+else
+   echo "get TTL time out, pls try again..."
+fi
+
